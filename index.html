@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1117">
+<title>AlgebraOps · Propiedades algebraicas I</title>
+<style>
+:root{--bg:#0c1117;--pn:#141c25;--ln:#243240;--tx:#d6e0ea;--mu:#7d8fa1;--ok:#4fd1a1;--bad:#ef6f6f;--ac:#5aa9e6;--gold:#e2b857;
+--f:"JetBrains Mono","Fira Code","SF Mono",Consolas,"Courier New",monospace}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.5 var(--f)}
+body{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);overflow-x:hidden}
+#app{max-width:480px;margin:0 auto;padding:16px;min-height:100%;display:flex;flex-direction:column;gap:14px}
+body.has-strip #app{padding-top:calc(56px + env(safe-area-inset-top,0px))}
+h1{font-size:22px;margin:0;letter-spacing:.5px}h2{font-size:17px;margin:0}
+.mu{color:var(--mu);font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:16px}
+input{width:100%;min-height:44px;background:#0a0f14;border:1px solid var(--ln);border-radius:6px;color:var(--tx);font:inherit;font-size:16px;padding:13px;outline:none}
+input:focus,button:focus-visible{border-color:var(--ac);box-shadow:0 0 0 2px #5aa9e655;outline:2px solid var(--ac);outline-offset:2px}
+button{font:inherit;min-height:44px;color:var(--tx);background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:14px;width:100%;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+button:active{background:#1b2733}
+.pri{background:var(--ac);color:#06121c;border-color:var(--ac);text-align:center;font-weight:700}
+.pri:active{background:#4a95cc}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;flex-wrap:wrap;gap:6px}
+.bar{height:4px;background:var(--ln);border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac);transition:width .4s}
+.tag{display:inline-block;font-size:12px;border:1px solid var(--ln);color:var(--ac);padding:2px 8px;border-radius:4px}
+.q{font-size:17px;margin:10px 0 14px;white-space:pre-line}
+.opts{display:flex;flex-direction:column;gap:9px}
+.opts button.ok{border-color:var(--ok);background:#4fd1a118}
+.opts button.no{border-color:var(--bad);background:#ef6f6f18}
+.opts button[disabled]{cursor:default}
+.shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.pulse{animation:pl .6s}@keyframes pl{40%{box-shadow:0 0 0 6px #4fd1a133,0 0 24px #4fd1a155}}
+.fx{position:fixed;left:0;top:0;pointer-events:none;color:var(--ok);font-weight:700;opacity:0;animation:fx 1s ease-out forwards;z-index:9}
+@keyframes fx{0%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+.pts{position:fixed;left:50%;top:38%;transform:translateX(-50%);color:var(--gold);font-size:26px;font-weight:700;pointer-events:none;animation:up 1s forwards;z-index:9}
+@keyframes up{0%{opacity:0;margin-top:20px}20%{opacity:1}100%{opacity:0;margin-top:-50px}}
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln);font-size:13px}
+.row:last-child{border:0}.row b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .bar{width:70px}
+.fm{font-size:clamp(15px,4.5vw,20px);color:var(--gold);text-align:center;padding:12px;border:1px dashed var(--ln);border-radius:6px;margin:10px 0;overflow-x:auto;word-break:break-word}
+
+/* Franja fija superior de ranking en vivo (máx 56px de alto) */
+.rk-strip{position:fixed;top:0;left:0;right:0;z-index:50;height:calc(48px + env(safe-area-inset-top,0px));max-height:56px;padding:env(safe-area-inset-top,0px) 12px 0;background:#10161f;border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 2px 10px #000000aa;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .25s,border-color .25s}
+.rk-strip:active{background:#16202c}
+.rk-strip.hid{display:none!important}
+.strip-podium{display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;font-size:11px;flex:1}
+.strip-item{display:inline-flex;align-items:center;gap:3px}
+.strip-me{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--tx)}
+.strip-arrow{font-size:9px;color:var(--mu);transition:transform .2s}
+.strip-arrow.open{transform:rotate(180deg)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--mu);transition:background .3s}
+.dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+/* Animación sobria al subir de puesto (~1s) */
+.rank-up{animation:rankGlow 1s ease-out}
+@keyframes rankGlow{
+  0%{background:#10161f;border-bottom-color:var(--ln)}
+  30%{background:#153325;border-bottom-color:var(--ok);box-shadow:0 0 16px #4fd1a155}
+  100%{background:#10161f;border-bottom-color:var(--ln);box-shadow:0 2px 10px #000000aa}
+}
+@media(prefers-reduced-motion:reduce){.rank-up{animation:none!important}}
+
+/* Desplegable de clasificación completa al tocar la franja */
+.rk-drop{position:fixed;inset:0;top:calc(48px + env(safe-area-inset-top,0px));z-index:49;display:flex;flex-direction:column}
+.rk-drop.hid{display:none!important}
+.drop-bg{position:absolute;inset:0;background:#00000088;backdrop-filter:blur(2px)}
+.drop-pn{position:relative;background:#141c25;border-bottom:2px solid var(--ac);border-radius:0 0 14px 14px;max-height:72vh;padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 12px 30px #000000cc;width:100%;max-width:480px;margin:0 auto;animation:shDown .2s ease-out}
+@keyframes shDown{from{transform:translateY(-12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.drop-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--ln)}
+.drop-title{font-size:14px;font-weight:700;color:var(--tx)}
+.sheet-list{overflow-y:auto;max-height:55vh;display:flex;flex-direction:column}
+.rk-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--ln);font-size:13px}
+.rk-row.me{background:#5aa9e618;border-radius:6px;border-color:var(--ac);font-weight:700}
+.rk-pos{width:24px;color:var(--mu);text-align:center;font-size:12px;font-weight:700}
+.rk-pos.top1{color:var(--gold)}
+.rk-pos.top2{color:#d6e0ea}
+.rk-pos.top3{color:#cd7f32}
+.rk-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-score{color:var(--gold);font-weight:700;text-align:right}
+.rk-sep{text-align:center;color:var(--mu);padding:6px 0;font-size:11px}
+
+/* Vista Proyector (#ranking) */
+.proj{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.proj h1{font-size:24px;margin:0}
+.proj .rk-row{padding:11px 8px;font-size:15px}
+.proj .rk-pos{width:32px;font-size:15px}
+.proj .rk-score{font-size:15px}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<!-- Franja fija superior en juego -->
+<div id="rk-strip" class="rk-strip hid" role="button" aria-expanded="false" aria-label="Ranking en vivo. Toca para ver clasificación completa" tabindex="0">
+  <div id="strip-podium" class="strip-podium"><span class="mu" style="font-size:11px">Conectando…</span></div>
+  <div id="strip-me" class="strip-me">
+    <span class="dot" id="strip-dot"></span>
+    <span id="strip-mypos">Tú: -</span>
+    <span id="strip-arrow" class="strip-arrow">▼</span>
+  </div>
+</div>
+
+<!-- Desplegable Top 10 -->
+<div id="rk-drop" class="rk-drop hid" role="dialog" aria-modal="true" aria-label="Clasificación en vivo">
+  <div class="drop-bg" id="drop-bg"></div>
+  <div class="drop-pn">
+    <div class="drop-header">
+      <span class="drop-title">🏆 Top 10 en vivo</span>
+      <span id="drop-status" class="mu" style="font-size:11px"></span>
+    </div>
+    <div id="drop-list" class="sheet-list"></div>
+    <div style="text-align:center;padding:4px 0">
+      <button id="drop-close-btn" style="padding:6px;font-size:11px;text-align:center;color:var(--mu);background:transparent;border:0;width:auto;margin:0 auto">▲ Toca para cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ========= CONFIGURACIÓN ========= */
+const firebaseConfig = {
+  apiKey: "AIzaSyATOGJVBVuqaH0gQbEZbM3kaGOLCv-Beps",
+  authDomain: "proyecto-g3-b72e4.firebaseapp.com",
+  databaseURL: "https://proyecto-g3-b72e4-default-rtdb.firebaseio.com",
+  projectId: "proyecto-g3-b72e4",
+  storageBucket: "proyecto-g3-b72e4.firebasestorage.app",
+  messagingSenderId: "9253928990",
+  appId: "1:9253928990:web:20997597ddf614d6d42e0f",
+  measurementId: "G-BGRY30F5EX"
+};
+const ROOM = "clase1";
+/* ================================= */
+
+const SUB = [
+  "Propiedad de clausura",
+  "Conmutativa y asociativa",
+  "Distributiva y factor común",
+  "Distributiva en cálculo mental"
+];
+const TEO = [
+  ["Un conjunto es cerrado bajo una operación si operar dos de sus elementos da otro elemento del mismo conjunto.", "a, b ∈ A  ⇒  a ∘ b ∈ A"],
+  ["Conmutativa: el orden no altera el resultado. Asociativa: la forma de agrupar no altera el resultado.", "a + b = b + a\n(a + b) + c = a + (b + c)"],
+  ["Distributiva: multiplicar una suma es multiplicar cada sumando. Factor común es el camino inverso.", "a(b + c) = ab + ac\nab + ac = a(b + c)"],
+  ["Descompón un número en redondos (10, 100) y ajustes para operar de cabeza.", "a × 98 = a(100 − 2)\na × 101 = a(100 + 1)"]
+];
+
+/* t: mc=opción múltiple, tf=verdadero/falso, num=respuesta numérica | a: índice correcto o valor */
+const Q = [
+  {s:0,t:"mc",q:"Un conjunto es cerrado bajo una operación cuando…",o:["el resultado siempre pertenece al conjunto","el resultado siempre es positivo","la operación es conmutativa","el resultado siempre es entero"],a:0,e:"Cerrado = operar elementos del conjunto nunca te saca de él."},
+  {s:0,t:"tf",q:"Los números enteros (ℤ) son cerrados bajo la división.",a:1,e:"Falso: 1 ÷ 2 = 0,5 no es entero."},
+  {s:0,t:"num",q:"En los naturales (ℕ) la resta no es cerrada. Calcula 7 − 12 y verás que sales de ℕ. ¿Qué valor da?",a:-5,e:"7 − 12 = −5, que no es natural."},
+  {s:0,t:"mc",q:"Ingeniería en Sistemas: en un registro uint8 (0 a 255) sumas 200 + 100. ¿La suma es cerrada en ese conjunto?",o:["Sí, porque 200 y 100 están en el rango","No, 300 excede el rango (overflow)","Sí, el procesador lo corrige siempre","No, porque la suma no es conmutativa"],a:1,e:"300 ∉ [0,255]: la operación no es cerrada y ocurre overflow."},
+  {s:1,t:"mc",q:"Completa la fórmula conmutativa:\na + b = ___",o:["b + a","a − b","a × b","(a + b) + c"],a:0,e:"El orden de los sumandos no altera la suma."},
+  {s:1,t:"tf",q:"La resta es conmutativa: 8 − 3 = 3 − 8.",a:1,e:"Falso: 8 − 3 = 5 pero 3 − 8 = −5."},
+  {s:1,t:"num",q:"Reagrupa con la asociativa y calcula:\n25 + 38 + 75",a:138,e:"(25 + 75) + 38 = 100 + 38 = 138."},
+  {s:1,t:"mc",q:"Ingeniería en Sistemas: ¿qué operación NO es conmutativa?",o:["Sumar enteros","Multiplicar enteros","Concatenar textos (\"Hola\"+\"Mundo\")","Máximo entre dos números"],a:2,e:"\"HolaMundo\" ≠ \"MundoHola\"."},
+  {s:2,t:"mc",q:"Completa la fórmula distributiva:\na(b + c) = ___",o:["ab + c","ab + ac","a + bc","(a + b)(a + c)"],a:1,e:"El factor a multiplica a cada sumando."},
+  {s:2,t:"tf",q:"6x + 9 = 3(2x + 3)",a:0,e:"Verdadero: 3 es factor común de 6x y 9."},
+  {s:2,t:"num",q:"Evalúa a(b + c) con a = 4, b = 3, c = 5.",a:32,e:"4(3 + 5) = 4 × 8 = 32."},
+  {s:2,t:"mc",q:"Ingeniería en Sistemas: un algoritmo hace 3n + 3m operaciones. Aplicando factor común queda…",o:["3(n + m)","3nm","n + m + 3","6(n + m)"],a:0,e:"3n + 3m = 3(n + m): una multiplicación en lugar de dos."},
+  {s:3,t:"num",q:"Calcula de cabeza con 98 = 100 − 2:\n7 × 98",a:686,e:"7(100 − 2) = 700 − 14 = 686."},
+  {s:3,t:"num",q:"Calcula de cabeza con 105 = 100 + 5:\n12 × 105",a:1260,e:"12(100 + 5) = 1200 + 60 = 1260."},
+  {s:3,t:"tf",q:"13 × 101 = 1313",a:0,e:"13(100 + 1) = 1300 + 13 = 1313."},
+  {s:3,t:"num",q:"Ingeniería en Sistemas: una licencia cuesta $19 por usuario. Estima el costo para 30 usuarios con 30 × (20 − 1).",a:570,e:"600 − 30 = 570."}
+];
+
+const $ = s => document.querySelector(s), app = $("#app");
+const rnd = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+const shortN = s => (s || "").length > 6 ? (s.slice(0, 5) + "…") : (s || "Anónimo");
+
+let S = null;
+try {
+  const raw = localStorage.getItem("ao_s");
+  if (raw) {
+    const p = JSON.parse(raw);
+    if (p && typeof p === "object" && typeof p.id === "string" && typeof p.name === "string") {
+      S = {
+        id: p.id,
+        name: p.name,
+        i: typeof p.i === "number" && !isNaN(p.i) ? Math.max(0, p.i) : 0,
+        score: typeof p.score === "number" && !isNaN(p.score) ? p.score : 0,
+        streak: typeof p.streak === "number" && !isNaN(p.streak) ? p.streak : 0,
+        ok: typeof p.ok === "number" && !isNaN(p.ok) ? p.ok : 0,
+        sub: Array.isArray(p.sub) && p.sub.length === 4 ? p.sub : [0, 0, 0, 0],
+        intro: typeof p.intro === "number" ? p.intro : -1
+      };
+    }
+  }
+} catch (e) { S = null; }
+
+let db = null;
+let isOnline = false;
+let roomData = {};
+let lastRenderTime = 0;
+let renderThrottleTm = null;
+let lastKnownPos = null;
+let isDropOpen = false;
+
+try {
+  if (typeof firebase !== "undefined" && firebase.apps) {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  }
+} catch (e) { db = null; }
+
+/* Escritura: una sola escritura pequeña por respuesta en rooms/{ROOM}/{id} = { n, sc, d } */
+function push() {
+  if (!S) return;
+  try { localStorage.setItem("ao_s", JSON.stringify(S)); } catch (e) {}
+  if (!db) return;
+  try {
+    db.ref("rooms/" + ROOM + "/" + S.id).set({
+      n: S.name,
+      sc: S.score,
+      d: S.i
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+const html = h => { app.innerHTML = h; };
+
+/* ---------- Firebase Listeners (Único listener de sala + .info/connected) ---------- */
+function initFirebase() {
+  if (!db) return updateConnIndicator();
+  try {
+    db.ref(".info/connected").on("value", snap => {
+      isOnline = snap.val() === true;
+      updateConnIndicator();
+      scheduleRankingRender();
+    });
+    db.ref("rooms/" + ROOM).on("value", snap => {
+      roomData = snap.val() || {};
+      scheduleRankingRender();
+    }, () => {
+      isOnline = false;
+      updateConnIndicator();
+    });
+  } catch (e) {
+    isOnline = false;
+    updateConnIndicator();
+  }
+}
+
+function updateConnIndicator() {
+  const dot = $("#strip-dot");
+  if (dot) {
+    if (isOnline) dot.classList.add("on");
+    else dot.classList.remove("on");
+  }
+}
+
+/* Throttle de renderizado: máximo 1 vez por segundo */
+function scheduleRankingRender() {
+  const now = Date.now();
+  const timeSinceLast = now - lastRenderTime;
+  if (timeSinceLast >= 1000) {
+    lastRenderTime = now;
+    renderRanking();
+  } else if (!renderThrottleTm) {
+    renderThrottleTm = setTimeout(() => {
+      renderThrottleTm = null;
+      lastRenderTime = Date.now();
+      renderRanking();
+    }, 1000 - timeSinceLast);
+  }
+}
+
+function getSortedRanking() {
+  const list = Object.entries(roomData).map(([id, u]) => ({
+    id,
+    n: String((u && u.n) || "Anónimo"),
+    sc: typeof (u && u.sc) === "number" ? u.sc : 0,
+    d: typeof (u && u.d) === "number" ? u.d : 0
+  }));
+  list.sort((a, b) => (b.sc - a.sc) || (a.d - b.d) || a.n.localeCompare(b.n));
+  return list;
+}
+
+function renderRankingListHtml(list, limitAll) {
+  if (!list.length) {
+    return `<div class="mu" style="text-align:center;padding:16px 0">${isOnline ? "Esperando jugadores en la sala…" : "Sin jugadores registrados"}</div>`;
+  }
+  const myId = S ? S.id : null;
+  const myIdx = myId ? list.findIndex(u => u.id === myId) : -1;
+  const items = limitAll ? list : list.slice(0, 10);
+
+  let h = items.map((u, i) => {
+    const isMe = u.id === myId;
+    const posClass = i === 0 ? "top1" : i === 1 ? "top2" : i === 2 ? "top3" : "";
+    return `<div class="rk-row ${isMe ? "me" : ""}">
+      <span class="rk-pos ${posClass}">${i + 1}</span>
+      <b class="rk-name">${esc(u.n)}${isMe ? " (tú)" : ""}</b>
+      <span class="mu" style="font-size:11px">${u.d}/16</span>
+      <span class="rk-score">${u.sc}</span>
+    </div>`;
+  }).join("");
+
+  if (!limitAll && myIdx >= 10) {
+    const me = list[myIdx];
+    h += `<div class="rk-sep">··· tu posición real ···</div>
+    <div class="rk-row me">
+      <span class="rk-pos">${myIdx + 1}</span>
+      <b class="rk-name">${esc(me.n)} (tú)</b>
+      <span class="mu" style="font-size:11px">${me.d}/16</span>
+      <span class="rk-score">${me.sc}</span>
+    </div>`;
+  }
+  return h;
+}
+
+function renderRanking() {
+  const list = getSortedRanking();
+  const myId = S ? S.id : null;
+  const myIdx = myId ? list.findIndex(u => u.id === myId) : -1;
+  const myPos = myIdx >= 0 ? (myIdx + 1) : 0;
+
+  // Animación sobria al subir de puesto (~1s)
+  if (lastKnownPos !== null && myPos > 0 && myPos < lastKnownPos) {
+    const strip = $("#rk-strip");
+    if (strip) {
+      strip.classList.add("rank-up");
+      setTimeout(() => strip.classList.remove("rank-up"), 1000);
+    }
+  }
+  if (myPos > 0) lastKnownPos = myPos;
+
+  // Actualizar franja fija superior
+  const podiumEl = $("#strip-podium");
+  if (podiumEl) {
+    if (!isOnline || !db) {
+      podiumEl.innerHTML = `<span class="mu">Modo local · ${S ? esc(S.name) : ""}</span>`;
+    } else if (!list.length) {
+      podiumEl.innerHTML = `<span class="mu">Esperando jugadores…</span>`;
+    } else {
+      const top3 = list.slice(0, 3);
+      const colors = ["var(--gold)", "#d6e0ea", "#cd7f32"];
+      podiumEl.innerHTML = top3.map((u, i) =>
+        `<span class="strip-item"><b style="color:${colors[i]}">${i + 1}</b> ${esc(shortN(u.n))} <span class="mu">${u.sc}</span></span>`
+      ).join('<span class="mu" style="opacity:.4">·</span>');
+    }
+  }
+
+  const myPosEl = $("#strip-mypos");
+  if (myPosEl) {
+    if (!isOnline || !db) {
+      myPosEl.textContent = `Tú: ${S ? S.score : 0} pts`;
+    } else {
+      myPosEl.textContent = `Tú: #${myPos > 0 ? myPos : "-"}`;
+    }
+  }
+
+  // Actualizar desplegable
+  const dropStatusEl = $("#drop-status");
+  if (dropStatusEl) {
+    dropStatusEl.innerHTML = (!isOnline || !db)
+      ? `<span class="bad">● Modo local</span>`
+      : `<span class="ok">● En vivo</span> · ${list.length} en sala`;
+  }
+  const dropListEl = $("#drop-list");
+  if (dropListEl) dropListEl.innerHTML = renderRankingListHtml(list, false);
+
+  // Si estamos en la vista de proyector (#ranking)
+  if (location.hash === "#ranking") {
+    const pMeta = $("#proj-meta");
+    if (pMeta) {
+      pMeta.innerHTML = (!isOnline || !db)
+        ? `<span class="bad">● Modo local</span> · Sala: ${esc(ROOM)}`
+        : `<span class="ok">● En vivo</span> · ${list.length} estudiantes conectados · Sala: ${esc(ROOM)}`;
+    }
+    const pList = $("#proj-list");
+    if (pList) pList.innerHTML = renderRankingListHtml(list, true);
+  }
+}
+
+function openDrop() {
+  const drop = $("#rk-drop");
+  const arrow = $("#strip-arrow");
+  const strip = $("#rk-strip");
+  if (drop) {
+    drop.classList.remove("hid");
+    isDropOpen = true;
+    if (arrow) arrow.classList.add("open");
+    if (strip) strip.setAttribute("aria-expanded", "true");
+    renderRanking();
+  }
+}
+
+function closeDrop() {
+  const drop = $("#rk-drop");
+  const arrow = $("#strip-arrow");
+  const strip = $("#rk-strip");
+  if (drop) drop.classList.add("hid");
+  isDropOpen = false;
+  if (arrow) arrow.classList.remove("open");
+  if (strip) strip.setAttribute("aria-expanded", "false");
+}
+
+function toggleDrop() {
+  if (isDropOpen) closeDrop();
+  else openDrop();
+}
+
+/* ---------- Pantallas del Juego ---------- */
+function login() {
+  document.body.classList.remove("has-strip");
+  const strip = $("#rk-strip");
+  if (strip) strip.classList.add("hid");
+  closeDrop();
+
+  html(`<div style="padding-top:20px"><h1>&gt; AlgebraOps_</h1>
+  <div class="mu">Propiedades algebraicas I: operaciones</div></div>
+  <div class="pn"><div class="mu" style="margin-bottom:8px">Escribe tu nombre para entrar a la sala</div>
+  <input id="nm" maxlength="24" placeholder="Nombre y apellido" autocomplete="off">
+  <button class="pri" style="margin-top:12px" id="go">Iniciar sesión</button></div>
+  <div class="mu">16 preguntas · 4 niveles · ${isOnline ? "conectado a la clase" : "resultados guardados en tu móvil"}</div>`);
+  const inp = $("#nm"), go = $("#go");
+  inp.onkeydown = e => { if (e.key === "Enter") go.click(); };
+  go.onclick = () => {
+    const n = inp.value.trim();
+    if (n.length < 2) {
+      inp.classList.add("shake");
+      setTimeout(() => inp.classList.remove("shake"), 350);
+      inp.focus();
+      return;
+    }
+    S = { id: rnd(), name: n, i: 0, score: 0, streak: 0, ok: 0, sub: [0, 0, 0, 0], intro: -1 };
+    push();
+    flow();
+  };
+}
+
+let locked = false;
+function flow() {
+  locked = false;
+  document.body.classList.add("has-strip");
+  const strip = $("#rk-strip");
+  if (strip) strip.classList.remove("hid");
+
+  if (S.i >= Q.length) return end();
+  const q = Q[S.i];
+  if (S.intro !== q.s) { return intro(q.s); }
+  ask();
+}
+
+function intro(s) {
+  html(`<div class="top"><span class="tag">Nivel ${s+1}/4</span><span class="mu">${S.score} pts</span></div>
+  <h2>${SUB[s]}</h2><div class="pn"><p style="margin:0 0 10px">${TEO[s][0]}</p><div class="fm">${TEO[s][1].replace(/\n/g,"<br>")}</div></div>
+  <button class="pri" id="st">Empezar nivel</button>`);
+  $("#st").onclick = () => { S.intro = s; push(); ask(); };
+}
+
+function ask() {
+  const q = Q[S.i], lvlStart = Q.findIndex(x => x.s === q.s), inLvl = S.i - lvlStart + 1, tot = Q.filter(x => x.s === q.s).length;
+  let body = "";
+  if (q.t === "mc") body = `<div class="opts">${q.o.map((o, i) => `<button data-i="${i}">${o}</button>`).join("")}</div>`;
+  else if (q.t === "tf") body = `<div class="opts"><button data-i="0">Verdadero</button><button data-i="1">Falso</button></div>`;
+  else body = `<input id="nv" inputmode="${q.a < 0 ? "text" : "decimal"}" placeholder="Tu respuesta" autocomplete="off"><button class="pri" style="margin-top:10px" id="ck">Verificar</button>`;
+  html(`<div class="top"><span class="tag">${SUB[q.s]} · ${inLvl}/${tot}</span><span><span class="gold">${S.score}</span> pts${S.streak > 1 ? ` · racha ${S.streak}` : ""}</span></div>
+  <div class="bar"><i style="width:${S.i / Q.length * 100}%"></i></div>
+  <div class="pn" id="card"><div class="mu">${q.t === "mc" ? "Opción múltiple" : q.t === "tf" ? "Verdadero o falso" : "Respuesta numérica"}</div><div class="q">${q.q}</div>${body}</div>
+  <div id="fb" role="status" aria-live="polite" aria-atomic="true"></div>`);
+  if (q.t === "num") {
+    const nv = $("#nv"), ck = $("#ck");
+    nv.onkeydown = e => { if (e.key === "Enter") ck.click(); };
+    ck.onclick = () => {
+      const raw = nv.value.trim().replace(/−/g, "-").replace(",", ".");
+      const v = parseFloat(raw);
+      if (raw === "" || isNaN(v)) {
+        nv.classList.add("shake");
+        setTimeout(() => nv.classList.remove("shake"), 350);
+        nv.focus();
+        return;
+      }
+      resolve(v === q.a, null);
+    };
+  } else {
+    document.querySelectorAll(".opts button").forEach(b => b.onclick = () => resolve(+b.dataset.i === q.a, b));
+  }
+}
+
+function resolve(good, btn) {
+  if (locked || !Q[S.i]) return;
+  locked = true;
+  const q = Q[S.i], card = $("#card");
+  document.querySelectorAll(".opts button,#ck,#nv").forEach(e => e.disabled = true);
+  if (q.t !== "num") {
+    const bs = document.querySelectorAll(".opts button");
+    if (bs[q.a]) bs[q.a].classList.add("ok");
+    if (!good && btn) btn.classList.add("no");
+  }
+  if (good) {
+    const g = 100 + Math.min(S.streak, 5) * 20;
+    S.score += g;
+    S.streak++;
+    S.ok++;
+    S.sub[q.s]++;
+    card.classList.add("pulse");
+    burst(card, g);
+  } else {
+    S.streak = 0;
+    card.classList.add("shake");
+  }
+  S.i++;
+  push();
+
+  const isLevelEnd = (S.i < Q.length && Q[S.i].s !== q.s);
+  const isGameEnd = S.i >= Q.length;
+
+  $("#fb").innerHTML = `<div class="pn"><b class="${good ? "ok" : "bad"}">${good ? "✔ Correcto" : "✘ Incorrecto"}</b><div class="mu" style="margin:6px 0 12px;font-size:14px">${q.t === "num" && !good ? "Respuesta: " + q.a + ". " : ""}${q.e}</div><button class="pri" id="nx">${isGameEnd ? "Ver resultado" : isLevelEnd ? "Completar nivel y ver ranking" : "Continuar"}</button></div>`;
+  $("#nx").onclick = () => {
+    if (isLevelEnd) openDrop();
+    flow();
+  };
+  $("#nx").scrollIntoView({ block: "nearest" });
+}
+
+/* Animación DOM ligera */
+function burst(el, g) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + 60;
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement("span");
+    s.className = "fx";
+    s.textContent = Math.random() < .5 ? "0" : "1";
+    s.style.left = cx + "px";
+    s.style.top = cy + "px";
+    s.style.setProperty("--dx", (Math.random() * 240 - 120) + "px");
+    s.style.setProperty("--dy", (Math.random() * 160 - 110) + "px");
+    s.style.animationDelay = (Math.random() * .15) + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1300);
+  }
+  const p = document.createElement("div");
+  p.className = "pts";
+  p.textContent = "+" + g;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 1100);
+}
+
+function end() {
+  const pct = Math.round(S.ok / Q.length * 100);
+  html(`<div style="padding-top:10px"><h1>&gt; Sesión completada</h1><div class="mu">${esc(S.name)}</div></div>
+  <div class="pn" style="text-align:center"><div style="font-size:40px;color:var(--gold);font-weight:700">${S.score}</div><div class="mu">puntos · ${S.ok}/${Q.length} aciertos (${pct}%)</div></div>
+  <div class="pn">${SUB.map((n, i) => `<div class="row"><b>${n}</b><span>${S.sub[i]}/4</span><div class="bar"><i style="width:${S.sub[i] * 25}%"></i></div></div>`).join("")}</div>
+  <button class="pri" id="open-rk-end">Ver ranking en vivo</button>
+  <button id="rs" style="margin-top:6px">Jugar de nuevo</button>`);
+  $("#open-rk-end").onclick = () => openDrop();
+  $("#rs").onclick = () => { S.i = 0; S.score = 0; S.streak = 0; S.ok = 0; S.sub = [0, 0, 0, 0]; S.intro = -1; push(); flow(); };
+  setTimeout(() => openDrop(), 400);
+}
+
+/* ---------- Vista Proyector (index.html#ranking) ---------- */
+function projectorView() {
+  document.body.classList.remove("has-strip");
+  const strip = $("#rk-strip");
+  if (strip) strip.classList.add("hid");
+  closeDrop();
+
+  html(`<div class="proj">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h1>&gt; Ranking en vivo_</h1>
+      <span class="tag" style="font-size:13px">Sala: ${esc(ROOM)}</span>
+    </div>
+    <div class="mu" id="proj-meta" style="font-size:14px">Cargando clasificación…</div>
+    <div class="pn" id="proj-list" style="padding:10px 14px"></div>
+    <div style="margin-top:10px;text-align:center">
+      <a href="#" id="proj-exit" style="color:var(--mu);text-decoration:none;font-size:13px">&larr; Volver al juego</a>
+    </div>
+  </div>`);
+  $("#proj-exit").onclick = e => {
+    e.preventDefault();
+    location.hash = "";
+    navigate();
+  };
+  renderRanking();
+}
+
+function navigate() {
+  if (location.hash === "#ranking") {
+    projectorView();
+  } else {
+    if (S && S.name) flow();
+    else login();
+  }
+}
+
+/* Listeners de interacción con la franja y desplegable */
+$("#rk-strip").onclick = () => toggleDrop();
+$("#rk-strip").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDrop(); } };
+$("#drop-bg").onclick = () => closeDrop();
+$("#drop-close-btn").onclick = () => closeDrop();
+window.addEventListener("hashchange", navigate);
+
+initFirebase();
+navigate();
+</script>
+</body>
+</html>
